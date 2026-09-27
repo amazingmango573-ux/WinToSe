@@ -1,0 +1,19 @@
+{
+    "target_architecture": "aarch64",
+    "cpu_model": "host",
+    "smp_cores": 4,
+    "ram_allocation_mb": 2560,
+    "display": {
+        "resolution": "1136x640",
+        "vram_mb": 128,
+        "accel_3d": true
+    },
+    "storage": {
+        "disk_image": "build/windows_handheld_target.img",
+        "interface": "nvme"
+    },
+    "network": {
+        "mode": "user",
+        "dhcp": true
+    }
+}
