@@ -1,0 +1,52 @@
+name: Build Custom Handheld IPA
+
+# This allows you to manually trigger the build from the GitHub Actions tab
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-ios:
+    name: Compile iOS App
+    runs-on: macos-latest # Forces GitHub to use an Apple Mac server
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # Critical: downloads QEMU and all dependencies
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Fetch Pre-built Dependencies
+        run: |
+          # UTM requires heavy sysroot dependencies. We use their script to grab them.
+          ./scripts/build_dependencies.sh -p ios_simulator-tci -a arm64
+          ./scripts/build_dependencies.sh -p iphoneos -a arm64
+
+      - name: Compile the Custom Xcode Project
+        run: |
+          echo "Compiling UTM Engine for iOS (arm64)..."
+          # -k iphoneos = Target real iPhones
+          # -s iOS = The iOS App Target
+          # -a arm64 = The A15 chip architecture
+          ./scripts/build_utm.sh -k iphoneos -s iOS -a arm64 -o build
+
+      - name: Package into an Unsigned .ipa
+        run: |
+          echo "Packaging .xcarchive into .ipa..."
+          mkdir output
+          # UTM's script automatically converts the Xcode archive into an installable IPA
+          ./scripts/package.sh ipa build/UTM.xcarchive output
+
+      - name: Upload Final IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Handheld-Console-App
+          # Grabs the compiled .ipa file from the output folder
+          path: output/*.ipa
+          retention-days: 7
